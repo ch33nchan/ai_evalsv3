@@ -1,0 +1,12 @@
+*.zip
+*.pkl
+data/cifake/
+data/cache/
+venv/
+__pycache__/
+*.pyc
+temp_upload.jpg
+.DS_Store
+*.pt
+models/*.pt
+!models/.gitkeep
