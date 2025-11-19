@@ -24,6 +24,8 @@ def main():
     args = parser.parse_args()
     config = load_config(args.config)
     
+    device = args.device if args.device == 'cpu' else 'cuda:0'
+    
     Path('models').mkdir(exist_ok=True)
     
     if args.mode == 'train':
@@ -34,26 +36,36 @@ def main():
             val_samples=config['data']['val_samples']
         )
         
+        import pickle
+        with open('data/val_data.pkl', 'wb') as f:
+            pickle.dump(val_data, f)
+        
         print(f"Train samples: {len(train_data)}, Val samples: {len(val_data)}")
         
-        print("Training model...")
-        trainer = Trainer(config, device=args.device)
+        print(f"Training model on device: {device}")
+        trainer = Trainer(config, device=device)
         history = trainer.train(train_data, val_data, config['training']['num_episodes'])
         
         print(f"Training complete. Best val accuracy: {max(history['val_acc']):.3f}")
         
     elif args.mode == 'eval':
-        print("Loading dataset for evaluation...")
-        dataset_gen = SlopDatasetGenerator(cache_dir=config['data']['cache_dir'])
-        _, val_data = dataset_gen.create_dataset(
-            train_samples=0,
-            val_samples=config['data']['val_samples']
-        )
+        print("Loading validation dataset...")
+        import pickle
+        try:
+            with open('data/val_data.pkl', 'rb') as f:
+                val_data = pickle.load(f)
+        except FileNotFoundError:
+            print("Validation data not found. Generating new dataset...")
+            dataset_gen = SlopDatasetGenerator(cache_dir=config['data']['cache_dir'])
+            _, val_data = dataset_gen.create_dataset(
+                train_samples=0,
+                val_samples=config['data']['val_samples']
+            )
         
-        evaluator = Evaluator(config, args.model, device=args.device)
+        evaluator = Evaluator(config, args.model, device=device)
         results = evaluator.evaluate_dataset(val_data)
         
-        print(f"Accuracy: {results['accuracy']:.3f}")
+        print(f"\nAccuracy: {results['accuracy']:.3f}")
         print(f"Correct: {results['correct']}/{results['total']}")
         
     elif args.mode == 'predict':
@@ -61,7 +73,7 @@ def main():
             print("Error: --image required for predict mode")
             return
         
-        evaluator = Evaluator(config, args.model, device=args.device)
+        evaluator = Evaluator(config, args.model, device=device)
         label, confidence = evaluator.predict(args.image)
         
         label_name = "AI-generated (slop)" if label == 1 else "Real"

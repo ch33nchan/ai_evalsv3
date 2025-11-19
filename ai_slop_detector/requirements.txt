@@ -9,3 +9,4 @@ requests==2.31.0
 tqdm==4.66.1
 opencv-python-headless==4.8.1.78
 imagehash==4.3.1
+gradio==4.8.0
