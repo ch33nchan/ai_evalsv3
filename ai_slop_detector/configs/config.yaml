@@ -6,7 +6,7 @@ data:
 
 model:
   feature_dim: 512
-  hidden_dim: 256
+  hidden_dim: 128
   num_actions: 10
   
 rl:
